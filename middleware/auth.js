@@ -1,54 +1,48 @@
-// authentication is done with the help of token stored in cookie
-// if token is found in cookie then it means the user is logged in
-// if cookie is not found then it means the user is not logged in
+const jwt = require("jsonwebtoken");
+const { PrismaClient } = require("@prisma/client");
+const ErrorHander = require("../utils/errorHander");
+const prisma = new PrismaClient();
 
-const jwt = require("jsonwebtoken")
-const User = require("../models/userModels")
-const catchAsyncError = require("./catchAsyncError")
-const ErrorHander = require("../utils/errorHander")
-exports.isAuthenticatedUser = catchAsyncError(async (req, res, next) => {
+exports.authenticateUser = async (req, res, next) => {
+  const token = req.cookies.token;
 
-    // fetching the token from cookies
-    // token is returned in the form of object
-    // const token = req.cookies
+  if (!token) {
+    return res.status(401).json({ message: "Authorization token is required" });
+  }
 
-    // we need only value of token
-    const { token } = req.cookies
-    // console.log(token)
+  try {
+    const decodedData = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: {
+        id: decodedData.id,
+      },
+    });
 
-    // what if the token is not found??
-    if (!token) {
-        next(new ErrorHander("Please login to access this resource", 401))
+    if (!user) {
+      return res.status(401).json({ message: "Invalid token" });
     }
 
-    // using jwt token we will verify that the user is logged in or not
-    // verify method takes token and secret key as a input
-    // also we can access the "id" of the user now
-    // converting of the token into orignal data
-
-    const decodedData = jwt.verify(token, process.env.JWT_SECRET)
-
-    // until the user is logged in he can access the resources using request
-    // "req.user" is used to store "user data" when logged in
-    // it is simply a variable
-    req.user = await User.findById(decodedData.id);
+    req.user = user;
 
     next();
-}) 
+  } catch (error) {
+    console.error("Authentication error:", error);
+    return res.status(401).json({ message: "Invalid token" });
+  } finally {
+    await prisma.$disconnect();
+  }
+};
 
-// checking either user role is "admin" or "user"
-// role is converted into array using spread operator
-exports.authorizedRoles=(...roles)=>{
-    return (req,res,next)=>{
-        // now comparing the admin with the role of user store in database
-        // includes is function of an array to check either the value recieved is stored in an "role" of schema or not
-        // roles= admin & req.user.role="user" this condition will run
-        // roles= admin & req.user.role="admin" this condition will not run and skip
-        // server understands what you are trying to do but refused to perform the function
-        if(!roles.includes(req.user.role))
-        {
-            return next( new ErrorHander(`Role: ${req.user.role} is not allowed to access this resource`,403))
-        }
-        next()
+exports.authorizedRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new ErrorHander(
+          `Role: ${req.user.role} is not allowed to access this resource`,
+          403
+        )
+      );
     }
-}
+    next();
+  };
+};

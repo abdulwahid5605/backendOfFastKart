@@ -1,28 +1,41 @@
 const express = require("express");
+const cors = require("cors");
+
 const app = express();
 
-// importing "cookie-parser"(middleware) to access the cookie value from body
 const cookieParser = require("cookie-parser");
 
-// this function is used to set the statuscode and message with the help of class errorHander
 const errorMiddleware = require("./middleware/error");
 
 const bodyParser = require("body-parser");
 
+const fileUplaod = require("express-fileupload");
 // middleware
 app.use(express.json());
 app.use(cookieParser());
+app.use(fileUplaod());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Route imports
 const product = require("./routes/productRoute");
 const user = require("./routes/userRoute");
+const theme = require("./routes/themeRoute");
+const category = require("./routes/categoryRoute");
+
 // const order = require("./routes/orderRoute");
+app.use(
+  cors({
+    origin: "http://localhost:3000", // Allow requests from frontend
+    credentials: true, // Allow sending cookies
+  })
+);
 
 // It acts as a middleware. Middleware is a function having access to request and response and can modify any request or response
 // .use is a method to add middlewares
-app.use("/api/v1", product);
-app.use("/api/v1", user);
+app.use("/en", product);
+app.use("/en", category);
+app.use("/en", user);
+app.use("/en", theme);
 // app.use("/api/v1",order)
 
 // using errorHander Middleware here

@@ -1,45 +1,73 @@
-const express = require("express")
-const { registerUser, loginUser, logoutUser, forgotPassword,  resetPassword, getUserDetails, updatePassword, updateProfile, getAllUsers, getSingleUser, UpdateUserRole, deleteUser } = require("../controller/userController")
-const { isAuthenticatedUser, authorizedRoles } = require("../middleware/auth")
-const router = express.Router()
+const express = require("express");
+const {
+  registerUser,
+  loginUser,
+  logoutUser,
+  forgotPassword,
+  resetPassword,
+  getUserDetails,
+  updatePassword,
+  updateProfile,
+  getAllUsers,
+  getSingleUser,
+  UpdateUserRole,
+  deleteUser,
+  addUser,
+  createUserAdmin,
+} = require("../controller/userController");
+const { authenticateUser, authorizedRoles } = require("../middleware/auth");
+const router = express.Router();
 
 // post request to register user
-router.route("/register").post(registerUser)
+router.route("/register").post(registerUser);
 
 // post api to login user
-router.route("/login").post(loginUser)
+router.route("/login").post(loginUser);
 
 // get Api
-router.route("/logout").get(logoutUser)
+router.route("/logout").get(logoutUser);
 
 // forgot password api
-router.route("/password/forgot").post(forgotPassword)
+router.route("/password/forgot").post(forgotPassword);
 
 // update password api put request
-router.route("/password/reset/:token").put(resetPassword)
+router.route("/password/reset/:token").put(resetPassword);
 
-// get api 
+// get api
 // it is necessary to be logged in to access getUserDetails
-router.route("/me").get(isAuthenticatedUser,getUserDetails)
+router.route("/me").get(authenticateUser, getUserDetails);
 
 // put api to update password
-router.route("/password/update").put(isAuthenticatedUser,updatePassword)
+router.route("/password/update").put(authenticateUser, updatePassword);
 
 // put api to update email and username
-router.route("/me/update").put(isAuthenticatedUser,updateProfile)
+router.route("/me/update").put(authenticateUser, updateProfile);
 
 // ----------------Admin Routes-------------------------------
 // get all users
-router.route("/admin/users").get(isAuthenticatedUser,authorizedRoles("admin"),getAllUsers)
+router
+  .route("/admin/users")
+  .get(authenticateUser, authorizedRoles("admin"), getAllUsers);
 
 // get single users
-router.route("/admin/:id").get(isAuthenticatedUser,authorizedRoles("admin"),getSingleUser)
+router
+  .route("/admin/:id")
+  .get(authenticateUser, authorizedRoles("admin"), getSingleUser);
 
 // update user role
-router.route("/admin/:id").put(isAuthenticatedUser,authorizedRoles("admin"),UpdateUserRole)
+router
+  .route("/admin/:id")
+  .put(authenticateUser, authorizedRoles("admin"), UpdateUserRole);
 
-// delete user role
-router.route("/admin/:id").delete(isAuthenticatedUser,authorizedRoles("admin"),deleteUser)
+// delete user
+router
+  .route("/admin/:id")
+  .delete(authenticateUser, authorizedRoles("admin"), deleteUser);
 
+router
+  .route("/user/create")
+  .post(authenticateUser, authorizedRoles("admin"), addUser);
 
-module.exports = router
+router.route("/auth/admin/register").post(createUserAdmin);
+
+module.exports = router;
